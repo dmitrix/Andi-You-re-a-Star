@@ -26,11 +26,11 @@ Two button controls, one moves you along X axis and the other moves you along Y 
  * ~~Consumable Mass~~
  * Different Consumable Masses
  * ~~Growing~~
- * Score
+ * ~~Score~~
  * Black Hole Death
- * Too Small Death
+ * ~~Too Small Death~~
  * Title Screen
  * End Screen
- * Particle Effects
+ * ~~Particle Effects~~
  * Two Button Controls
  * Control Inversion

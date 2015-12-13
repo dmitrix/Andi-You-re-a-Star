@@ -1,3 +1,12 @@
+/**
+ * ld34.js
+ *
+ * Marcel Baarsch
+ * github.com/dmitrix
+ *
+ * Entry for Ludum Dare 34.
+ */
+
 var game = new Phaser.Game(
   700, 700,
   Phaser.AUTO,
@@ -25,8 +34,13 @@ var MASS_MARGIN_Y = 30;  // " (measured in px)
  */
 var mass;                // Random Spawn, Consumed by player
 var mScale = 0.8;        // Mass size
-var mGrowth = 0.05;       // Amount of mass player gains when consumed
+var mGrowth = 0.08;       // Amount of mass player gains when consumed
 var mRadius = 75/2;      // multiply by mScale to get true radius
+
+var massPink;
+var mpScale = 1;
+var mpGrowth = 0.2;
+var mpRadius = 74/2;
 
 var player;              // User Controlled
 var playerR = 350;       // multiply by pScale to get true radius
@@ -35,11 +49,36 @@ var pScale = 0.25;        // Starting scale (1 = Full Width of Screen)
 var randomX;             // For random x coord gen
 var randomY;             // For random y coord gen
 
+var gameOver = false;
+
 var spaceBar;
+var score = 0;
+var scoreText;
+
+var mainText;
+
+var emitter;
+
+/**
+ * Mass Color Key
+ *
+ * blue:  small-growth
+ * green: big-growth
+ * pink:  shrink
+ */
 
 function preload(){
+  /* Load Player */
   game.load.image("player", "res/bigplayer.png");
-  game.load.image("mass", "res/consumableMass.png");
+
+  /* Load Masses */
+  game.load.image("mass-blue", "res/mass-blue.png");
+  //game.load.image("mass-green", "res/mass-green.png");
+  game.load.image("mass-pink", "res/mass-pink.png");
+
+  /* Load Particles */
+  game.load.image("particle-orange", "res/particle-orange.png");
+  game.load.image("particle-blue", "res/particle-blue.png");
 }
 
 function create(){
@@ -49,19 +88,45 @@ function create(){
   game.stage.backgroundColor = '#1a0d22';
 
   /**
+   * Particle Fun
+   */
+  emitter = game.add.emitter(0,0,100);
+  emitter.makeParticles('particle-orange');
+  emitter.gravity = 0;
+
+  blueEmitter = game.add.emitter(0,0,100);
+  blueEmitter.makeParticles('particle-blue');
+  blueEmitter.gravity = 0;
+
+  /**
    * Create Mass (behind player)
    */
   randomX = Math.floor(Math.random() * game.width);
   randomY = Math.floor(Math.random() * game.height);
 
-  mass = game.add.sprite(randomX, randomY, "mass");
+  mass = game.add.sprite(randomX, randomY, "mass-blue");
   mass.anchor.setTo(0.5);
   game.physics.enable(mass, Phaser.Physics.ARCADE);
-  mass.body.collideWorldBounds = true;
+  mass.body.collideWorldBounds = false;
   mass.body.bounce.set(1);
   mass.body.immovable = true;
 
   mass.scale.setTo(mScale, mScale);
+
+  /**
+   * Create Pink Mass
+   */
+  randomX = Math.floor(Math.random() * game.width);
+  randomY = Math.floor(Math.random() * game.height);
+
+  massPink = game.add.sprite(randomX, randomY, "mass-pink");
+  massPink.anchor.setTo(0.5);
+  game.physics.enable(massPink, Phaser.Physics.ARCADE);
+  massPink.body.collideWorldBounds = false;
+  massPink.body.bounce.set(1);
+  massPink.body.immovable = true;
+
+  massPink.scale.setTo(mpScale, mpScale);
 
   /**
    * Create Player
@@ -74,6 +139,33 @@ function create(){
   player.body.immovable = true;
 
   player.setScaleMinMax(SCALE_MIN, SCALE_MIN, SCALE_MAX, SCALE_MAX);
+
+
+
+
+
+  /**
+   * Score Text
+   */
+  scoreText = game.add.text(game.width-10, 10, '' + score);
+  scoreText.anchor.set(1,0);
+  scoreText.align = 'right';
+  scoreText.font = 'Arial';
+  scoreText.fontWeight = 'bold';
+  scoreText.fontSize = 32;
+  scoreText.fill = "#ffffff";
+
+  /**
+   * Main Text
+   */
+  mainText = game.add.text(game.world.centerX, game.world.centerY, 'GAME OVER');
+  mainText.anchor.set(0.5,0.5);
+  mainText.align = 'center';
+  mainText.font = 'Arial';
+  mainText.fontWeight = 'bold';
+  mainText.fontSize = 52;
+  mainText.fill = '#ffffff';
+  mainText.visible = false;
 
 
 
@@ -91,6 +183,8 @@ function create(){
     massRespawn();
     //growing();
   }, this);
+
+
 
   //game.add.tween(player.scale).to( { x: 3, y: 3 }, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
 }
@@ -160,6 +254,33 @@ function update(){
   else if (player.y <= -playerR) // Left
     player.y = game.height + playerR;
 
+  /**
+   * Respawn Mass
+   */
+  if (mass.x > game.width + (mRadius * mScale))
+    massRespawn();
+  else if (mass.x < 0 - (mRadius * mScale))
+    massRespawn();
+
+  if (mass.y > game.height + (mRadius * mScale))
+    massRespawn();
+  else if (mass.y < 0 - (mRadius * mScale))
+    massRespawn();
+
+  /**
+   * Respawn Pink Mass
+   */
+  if (massPink.x > game.width + (mRadius * mScale))
+    mpRespawn();
+  else if (massPink.x < 0 - (mRadius * mScale))
+    mpRespawn();
+
+  if (massPink.y > game.height + (mRadius * mScale))
+    mpRespawn();
+  else if (massPink.y < 0 - (mRadius * mScale))
+    mpRespawn();
+
+
 
   /**
    * Player <-> Mass Collision
@@ -170,17 +291,76 @@ function update(){
     {
       massRespawn();
       growing();
+      score++;
+      scoreText.text = '' + score;
     }
   }
 
+  /**
+   * Game Over
+   */
+  if (pScale <= SCALE_MIN)
+    gm();
+
 }
 
+var initGM = true;
+
+function gm()
+{
+  if (initGM)
+  {
+    player.kill();
+    particleBurst(player.x, player.y);
+    mainText.visible = true;
+    gameOver = true;
+  }
+ initGM = false;
+}
+
+function particleBurst(x, y){
+  emitter.x = x;
+  emitter.y = y;
+
+  emitter.start(true, 20000, null, 50);
+}
+
+var randomVelocityX;
+var randomVelocityY=0;
+var invertVelocityX = false;
+var invertVelocityY = false;
+
 function massRespawn(){
+  blueEmitter.x = mass.x;
+  blueEmitter.y = mass.y;
+  blueEmitter.start(true, 2000, null, 30);
+
   randomX = Math.floor(Math.random() * game.width);
   randomY = Math.floor(Math.random() * game.height);
 
+  if (!invertVelocityX)
+    randomVelocityX = Math.floor(Math.random() * 100)+40;
+  else
+    randomVelocityX = -Math.floor(Math.random() * 100);
+
+  if (!invertVelocityY)
+    randomVelocityY = Math.floor(Math.random() * 100);
+  else
+    randomVelocityY = -Math.floor(Math.random() * 100);
+
+
   mass.x = randomX;
   mass.y = randomY;
+  mass.body.velocity.x = randomVelocityX;
+  mass.body.velocity.y = randomVelocityY;
+
+  invertVelocityX = !invertVelocityX;
+  invertVeloictyY = !invertVelocityY;
+}
+
+function mpRespawn()
+{
+
 }
 
 function growing(){
