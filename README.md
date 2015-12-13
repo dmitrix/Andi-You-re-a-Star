@@ -21,7 +21,7 @@ Two button controls, one moves you along X axis and the other moves you along Y 
 ## TODO LIST
 
  * ~~Player Movement~~
- * Smooth Player Movement
+ * ~~Smooth Player Movement~~
  * ~~Constant Shrinking~~
  * ~~Consumable Mass~~
  * ~~Different Consumable Masses~~
