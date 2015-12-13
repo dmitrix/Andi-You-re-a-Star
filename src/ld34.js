@@ -25,9 +25,11 @@ var SLIPPERYNESS = 10;   // smaller number 'slips' more
 var TOP_SPEED = 400;     // The fastest the player can move
 var SCALE_RATE = 0.002;  // How fast the player looses mass
 var SCALE_MIN = 0.01;    // Burn out Point
-var SCALE_MAX = 1.5;       // Black Hole Point
+var SCALE_MAX = (window.innerWidth-50) / (75/2);       // Black Hole Point
 var MASS_MARGIN_X = 30;  // The closest mass can spawn to the edge
 var MASS_MARGIN_Y = 30;  // " (measured in px)
+
+console.log('SCALE_MAX:' + SCALE_MAX);
 
 /**
  * dynamicVariables
@@ -64,6 +66,7 @@ var introText4;
 var mainText;
 
 var emitter;
+var orangeEmitter;
 
 var gameStarted = false;
 
@@ -87,6 +90,7 @@ function preload(){
   /* Load Particles */
   game.load.image("particle-orange", "res/particle-orange.png");
   game.load.image("particle-blue", "res/particle-blue.png");
+  game.load.image("particle-pink", "res/particle-pink.png");
 
   /* Load Black Hole */
   game.load.image("blackhole", "res/blackhole.png");
@@ -112,6 +116,10 @@ function create(){
   blueEmitter.makeParticles('particle-blue');
   blueEmitter.gravity = 0;
 
+  pinkEmitter = game.add.emitter(0,0,100);
+  pinkEmitter.makeParticles('particle-pink');
+  pinkEmitter.gravity = 0;
+
   /**
    * Create Player
    */
@@ -123,6 +131,17 @@ function create(){
   player.body.immovable = true;
 
   player.setScaleMinMax(SCALE_MIN, SCALE_MIN, SCALE_MAX, SCALE_MAX);
+
+  orangeEmitter = game.add.emitter(0,0,100);
+  orangeEmitter.makeParticles('particle-orange');
+  orangeEmitter.gravity = 0;
+
+  orangeEmitter.x = player.x;
+  orangeEmitter.y = player.y;
+  orangeEmitter.setXSpeed(-100, 100);
+  orangeEmitter.setYSpeed(-100, 100);
+
+  orangeEmitter.start(false, 2000, 250);
 
   /**
    * Create Mass (behind player)
@@ -266,6 +285,10 @@ function create(){
       introText3.visible = false;
       introText4.visible = false;
       introText5.visible = false;
+      massPink.body.velocity.x = 50;
+      massPink.body.velocity.y = 50;
+      mass.body.velocity.x = -50;
+      mass.body.velocity.y = -50
     }
 
 
@@ -290,7 +313,7 @@ function create(){
         break;
     }
 
-    console.log(spaceCount);
+
   }
   }, this);
 
@@ -322,12 +345,18 @@ function update(){
     player.body.velocity.x += SLIPPERYNESS;
   else if (cursors.right.isDown) // Accelerate Right
   {
-      player.body.velocity.x = TOP_SPEED;
+      if (player.body.velocity.x < TOP_SPEED)
+        player.body.velocity.x += 50;
+      else
+        player.body.velocity.x = TOP_SPEED;
   }
   else if (cursors.left.isDown) // Accelerate Left
   {
 
-      player.body.velocity.x = -TOP_SPEED;
+      if (player.body.velocity.x > -TOP_SPEED)
+        player.body.velocity.x -= 50;
+      else
+        player.body.velocity.x = -TOP_SPEED;
   }
   else
     player.body.velocity.x = 0;
@@ -342,11 +371,17 @@ function update(){
    player.body.velocity.y += SLIPPERYNESS;
  else if (cursors.down.isDown) // Accelerate Right
  {
-     player.body.velocity.y = TOP_SPEED;
+     if (player.body.velocity.y < TOP_SPEED)
+       player.body.velocity.y += 50;
+     else
+       player.body.velocity.y = TOP_SPEED;
  }
  else if (cursors.up.isDown) // Accelerate Left
  {
-     player.body.velocity.y = -TOP_SPEED;
+     if (player.body.velocity.y > -TOP_SPEED)
+       player.body.velocity.y -= 50;
+     else
+       player.body.velocity.y = -TOP_SPEED;
  }
  else
    player.body.velocity.y = 0;
@@ -394,6 +429,7 @@ function update(){
   else if (massPink.y < 0 - (mRadius * mScale))
     mpRespawn();
 
+  console.log('pScale: ' + pScale);
 
 
   /**
@@ -423,6 +459,13 @@ function update(){
        scoreText.text = '' + score;
      }
    }
+
+   /**
+    * Player emitter
+    */
+   orangeEmitter.x = player.x;
+   orangeEmitter.y = player.y;
+
  }
  else
  {
@@ -455,6 +498,8 @@ function gm(blackhole)
       particleBurst(player.x, player.y);
       mainText.visible = true;
       gameOver = true;
+      orangeEmitter.kill();
+      orangeEmitter.destroy();
     }
   }
   else
@@ -465,6 +510,8 @@ function gm(blackhole)
       player.kill();
       mainText.visible = true;
       gameOver = true;
+      massPink.kill();
+      mass.kill();
     }
   }
  initGM = false;
@@ -475,8 +522,10 @@ function particleBurst(x, y){
   emitter.x = x;
   emitter.y = y;
 
-  emitter.start(true, 20000, null, 50);
+  emitter.start(true, 0, null, 50);
 }
+
+
 
 var randomVelocityX;
 var randomVelocityY=0;
@@ -513,11 +562,11 @@ function massRespawn(){
 
 function mpRespawn()
 {
-  /*
-  pinkEmitter.x = mass.x;
-  pinkEmitter.y = mass.y;
+
+  pinkEmitter.x = massPink.x;
+  pinkEmitter.y = massPink.y;
   pinkEmitter.start(true, 2000, null, 30);
-  */
+
 
   randomX = Math.floor(Math.random() * game.width);
   randomY = Math.floor(Math.random() * game.height);
@@ -544,7 +593,7 @@ function mpRespawn()
 
 function growing(growthAmount){
   pScale += growthAmount;
-  console.log("GROWING");
+
 }
 
 function resizeGame() {
