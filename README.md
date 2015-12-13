@@ -24,13 +24,15 @@ Two button controls, one moves you along X axis and the other moves you along Y 
  * Smooth Player Movement
  * ~~Constant Shrinking~~
  * ~~Consumable Mass~~
- * Different Consumable Masses
+ * ~~Different Consumable Masses~~
  * ~~Growing~~
  * ~~Score~~
- * Black Hole Death
+ * ~~Black Hole Death~~
  * ~~Too Small Death~~
- * Title Screen
+ * ~~Title Screen~~
  * End Screen
  * ~~Particle Effects~~
  * Two Button Controls
  * Control Inversion
+ * Mobile Controls
+ * Balanced Mechanics
